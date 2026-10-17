@@ -7,6 +7,12 @@ if (!(apiId ==~ /[0-9]{1,10}/) || apiId.toLong() > Integer.MAX_VALUE || !(apiHas
 }
 ext.amegramApiId = Integer.parseInt(apiId)
 ext.amegramApiHash = apiHash
+// Maps is a separate Google API registration, not a Telegram or Firebase key.
+def mapsApiKey = amegramSourceChecks ? '' : providers.environmentVariable('AMEGRAM_GOOGLE_MAPS_API_KEY').orElse('').get()
+if (!(mapsApiKey.isEmpty() || mapsApiKey ==~ /[A-Za-z0-9_-]{1,256}/)) {
+    throw new GradleException('Invalid optional AmeGram Maps configuration; value intentionally omitted.')
+}
+ext.amegramGoogleMapsApiKey = mapsApiKey
 
 if (APP_PACKAGE != 'dev.umi.amegram') {
     throw new GradleException('AmeGram builds require the independent dev.umi.amegram application ID.')

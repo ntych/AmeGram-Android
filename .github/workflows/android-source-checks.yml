@@ -50,6 +50,11 @@ jobs:
           :TMessagesProj:compileDebugLibraryResources
           :TMessagesProj:testDebugUnitTest
           :TMessagesProj_App:processAfatDebugResources
+          :TMessagesProj_App:processAfatDebugMainManifest
+          :TMessagesProj_App:checkAfatDebugDuplicateClasses
+          :TMessagesProj_App:compileAfatDebugJavaWithJavac
+      - name: Verify merged Firebase provider/service and application boundaries
+        run: python3 tools/amegram_debug.py manifest-check
       - name: Verify that source-check mode cannot package APKs
         run: |
           if ./gradlew -PamegramSourceChecks=true --no-daemon --no-parallel --max-workers=1 '-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g' :TMessagesProj_App:assembleAfatDebug > source-guard.log 2>&1; then

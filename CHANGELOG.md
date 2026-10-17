@@ -2,6 +2,10 @@
 
 ## 0.1.0-alpha — Unreleased
 
+- Add redacted owner-configured debug preflight/build commands with Telegram/Firebase output, merged manifest and duplicate-class checks.
+- Make debug FCM services private and replace inherited debug Maps keys with a separate optional owner environment binding.
+- Document platform-specific cloud secret handoff, Firebase compatibility checks and remaining device/service gates.
+
 - Add pinned, credential-free pull-request source/resource/unit checks and AGP application-ID verification.
 - Remove tracked service JSON fixtures from new trees, protect local configuration/signing paths and keep Firebase generation in the app module.
 - Pin the Gradle distribution checksum and document current build/component/emulator compatibility.

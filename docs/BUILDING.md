@@ -23,7 +23,11 @@ git submodule update --init --recursive --depth=1 -- TMessagesProj_Modules/media
   '-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g' --console=plain \
   checkAmeGramApplicationIds :TMessagesProj:compileDebugJavaWithJavac \
   :TMessagesProj:compileDebugLibraryResources :TMessagesProj:testDebugUnitTest \
-  :TMessagesProj_App:processAfatDebugResources
+  :TMessagesProj_App:processAfatDebugResources \
+  :TMessagesProj_App:processAfatDebugMainManifest \
+  :TMessagesProj_App:checkAfatDebugDuplicateClasses \
+  :TMessagesProj_App:compileAfatDebugJavaWithJavac
+python3 tools/amegram_debug.py manifest-check
 ```
 
 This profile compiles the real sources and resources and runs JVM tests without Google-services processing, optional store plugins or owner API values. It always generates API ID 0 / empty hash and **rejects every APK/bundle packaging attempt**. It is not an installable client, a mock backend, or a way to bypass application registration. Native compilation and emulator/instrumentation tests are separate checks requiring the appropriate configuration. CI uses read-only permissions and does not request secrets or upload configuration/build outputs.
@@ -45,14 +49,44 @@ The existing lint backlog is documented in [BUILD_AUDIT.md](BUILD_AUDIT.md); it 
 3. Review Google/maps/auth/push integrations and signing fingerprints for this independent application. Upstream SafetyNet/Google auth/Huawei values and SMS app hashes are cleared; official-only passkeys are disabled. Manual Telegram login remains the intended supported path, but has not been device-verified. Do not claim services work merely because their classes compile.
 4. Use the standard locally generated Android debug keystore. Do not distribute a debug build as a signed release. The upstream `TMessagesProj/config/release.keystore` and public fixture passwords remain provenance/test inputs for unconfigured upstream distribution scripts; AmeGram debug signing no longer uses them.
 
-Once configuration is available:
+Once configuration is available in the **same process environment** that launches Gradle, use the checked-in entry point:
 
 ```bash
-./gradlew :TMessagesProj_App:processAfatDebugResources
-./gradlew :TMessagesProj_App:assembleAfatDebug -Pandroid.injected.build.abi=x86_64 --max-workers=1
+# Safe without Telegram API values: validate the real local Firebase integration.
+python3 tools/amegram_debug.py firebase-check
+# Requires both owner Telegram API variables; checks generated BuildConfig too.
+python3 tools/amegram_debug.py check
+# Runs all preflight checks before attempting a genuinely configured debug APK.
+python3 tools/amegram_debug.py build --abi x86_64
 ```
 
-The x86_64 selection above matches the documented emulator. Select arm64-v8a for a corresponding physical device, or omit the injected ABI to build all configured native targets. The regular module is the supported initial application target. The base app ID is `dev.umi.amegram`, versionName `0.1.0-alpha`, base versionCode 1; the upstream ABI encoding makes afat code 19. Keep the upstream source/resource namespace (`org.telegram.*`); it is separate from the install identity.
+PR source CI also runs the merged-manifest and duplicate-class checks without receiving owner configuration.
+
+The helper validates API format, the exact debug Firebase client/project, actual generated Firebase resources, the merged application/provider identity, the private FCM service, analytics opt-outs, duplicate classes and Java/resources. `check` additionally verifies the generated Telegram constants against the environment without printing them. No login or push-delivery claim follows from these build checks. Errors do not print JSON content, API values or parser excerpts. On POSIX, keep the debug JSON mode 0600. A higher-priority variant JSON that generates different Firebase values causes preflight to fail before APK assembly.
+
+The helper never reads a `.env` file, accepts no credential arguments, writes no secret export file and creates no replacement service registration. It starts Gradle with one worker, a 4 GiB heap, no reusable daemon, and no build/configuration cache for owner-configured checks/builds. Generated BuildConfig/resources and the APK necessarily contain client registration values; keep these ignored local outputs private. Do not use `--debug` logging, build scans or upload build caches/artifacts from a configured build.
+
+### Cloud/local secret handoff
+
+| Name / location | Purpose |
+| --- | --- |
+| `AMEGRAM_API_ID` | Own positive signed 32-bit Telegram application ID |
+| `AMEGRAM_API_HASH` | Own 32-character hexadecimal Telegram application hash |
+| `TMessagesProj_App/src/debug/google-services.json` | Independent Firebase Android registration for `dev.umi.amegram.beta` |
+| `AMEGRAM_GOOGLE_MAPS_API_KEY` (optional) | Separate Google Maps SDK for Android registration; not the Telegram hash and not automatically copied from Firebase |
+
+Bind the API variables through the environment's supported secret bindings or a local secret manager before running the helper. Do not put values in Git, ordinary documentation, chat, command arguments or shell history. The helper inherits the supplied environment; merely saving a secret in a UI does not establish that the Gradle process can read it. In managed cloud environments, verify that the bindings are ready for the active runtime. In Codex Cloud environments where secrets exist only in the setup script, run the helper from that setup step. This setup-only behavior is platform-specific, not a requirement imposed by AmeGram. Avoid persisting secret exports to bridge setup/runtime lifetimes.
+
+A setup step, after the reviewed checkout, pinned toolchain, submodules and ignored Firebase file have been provisioned, can run:
+
+```bash
+# AMEGRAM_API_ID / AMEGRAM_API_HASH are injected by the platform, not written here.
+python3 tools/amegram_debug.py build --abi x86_64
+```
+
+The two Telegram variables do not configure Firebase, Google OAuth, SMS hashes, reCAPTCHA or Maps. Firebase's project number and mobile SDK app ID must agree with each other, not with the Telegram API ID. Debug Maps metadata now references a separate generated AmeGram resource. Without an owner Maps key, Google Maps rendering is unconfigured; registration requires enabling that SDK and correct package/signing restrictions. Never restore the inherited upstream key. Release/standalone manifests and distribution integrations remain outside the supported debug target and require their own credential audit; their signing/credential declarations are unchanged.
+
+The x86_64 selection above matches the documented emulator. Select `--abi arm64-v8a` for a corresponding physical device. The helper always selects one ABI; all-ABI/native validation is a separate step. The regular module is the supported initial application target. The base app ID is `dev.umi.amegram`, versionName `0.1.0-alpha`, base versionCode 1; the upstream ABI encoding makes afat code 19. Keep the upstream source/resource namespace (`org.telegram.*`); it is separate from the install identity.
 
 The current task intentionally stops APK packaging when API configuration is missing. Other upstream application modules need their own service/privacy audit before packaging. Non-debug distribution is blocked even if API values are configured: independent release signing, service registrations, notice/source delivery and device validation must be implemented/reviewed in a subsequent change. No release or deployment is authorized by a successful local build.
 
@@ -93,6 +127,6 @@ adb wait-for-device
 adb shell getprop sys.boot_completed
 ```
 
-Use a writable Android user/AVD directory appropriate to your environment. KVM on Linux requires host CPU virtualization and `/dev/kvm`; it cannot be manufactured inside this container. If unavailable, `-accel off` uses slow software TCG and may take much longer to boot. ADB connectivity alone is not boot completion: require `sys.boot_completed=1` and inspect the active UI before calling the device ready. App installation still requires a valid configured AmeGram APK; emulator setup does not remove the API/Firebase requirements. Software emulation does not validate other ABIs or 16 KiB page-size devices.
+Use a writable Android user/AVD directory appropriate to your environment. KVM on Linux requires host CPU virtualization and `/dev/kvm`; it cannot be manufactured inside this container. If unavailable, `-accel off` uses slow software TCG and may take much longer to boot. ADB connectivity alone is not boot completion: require `sys.boot_completed=1` and inspect the active UI before calling the device ready. The default/AOSP image does not contain Google Play Services and cannot validate FCM delivery; use a Google APIs/Play-enabled device for those tests. App installation still requires a valid configured AmeGram APK; emulator setup does not remove the API/Firebase requirements. Software emulation does not validate other ABIs or 16 KiB page-size devices.
 
 See [BUILD_AUDIT.md](BUILD_AUDIT.md) for this session's actual checks and limitations.

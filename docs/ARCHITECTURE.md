@@ -71,3 +71,5 @@ See [VERIFICATION.md](VERIFICATION.md) for actual commands/results. Compiling Ja
 ## Source-check profile update
 
 The 2026-10-17 [build audit](BUILD_AUDIT.md) adds a credential-free PR profile, removes Firebase generation from the shared library, removes tracked service JSON fixtures and verifies final regular variant IDs. Normal application identity, production signing and visual tokens are unchanged. See that audit for current verification results rather than treating the initial blockers above as current.
+
+The owner-configured debug helper and manifest/provider checks are documented in [API_FIREBASE_READINESS.md](API_FIREBASE_READINESS.md). Telegram BuildConfig, Firebase app resources and the optional Maps resource are independent registrations.
