@@ -25,6 +25,11 @@ class TelegramBuildAppPlugin : Plugin<Project> {
                 variant.makeResValueKey("string", "amegram_account_type"),
                 ResValue(appVariant.applicationId.get(), "Independent AmeGram Android account type")
             )
+            variant.resValues.put(
+                variant.makeResValueKey("string", "amegram_google_maps_api_key"),
+                ResValue(project.rootProject.extensions.extraProperties.get("amegramGoogleMapsApiKey") as String,
+                    "Optional owner Google Maps registration; independent of Telegram and Firebase")
+            )
             val suffix = variant.name.replaceFirstChar { it.uppercase() }
 
             val task = project.tasks.register<TelegramStringsTask>(

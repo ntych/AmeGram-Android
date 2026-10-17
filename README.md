@@ -28,3 +28,7 @@ The supported first build target is the regular `TMessagesProj_App` debug varian
 This project derives from [Telegram for Android](https://github.com/DrKLO/Telegram), pinned initially to `f32ffeec763f0bdbf4bec25b52d654f77bff733d` (13.0.2 / 7175). The upstream source headers specify **GNU GPL version 2 or later**; the [LICENSE](LICENSE) contains GPL v2. Existing copyright notices and third-party licenses remain applicable. AmeGram-specific files use `GPL-2.0-or-later`. Publish corresponding source and satisfy component licenses when distributing builds.
 
 The unmodified starting [upstream README](docs/TELEGRAM_UPSTREAM_README.md) is preserved for provenance; its branding and configuration instructions describe Telegram, not AmeGram. Telegram's [API terms](https://core.telegram.org/api/terms), [API registration requirements](https://core.telegram.org/api/obtaining_api_id) and [security guidance](https://core.telegram.org/mtproto/security_guidelines) also apply. Obtain your own API ID, use independent branding, protect user data and publish the source of distributed modifications.
+
+Owner-configured debug preflight and build entry point: `python3 tools/amegram_debug.py check` / `build`; see [secret handoff and Firebase checks](docs/BUILDING.md#owner-configuration-required-before-a-debug-apk).
+
+See [Telegram/Firebase readiness](docs/API_FIREBASE_READINESS.md) for verified boundaries and remaining runtime gates.

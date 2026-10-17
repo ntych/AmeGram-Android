@@ -42,6 +42,17 @@ def check():
         element = ET.parse(ROOT / 'TMessagesProj/src/main/res/xml' / path).getroot()
         if element.get(android + 'accountType') != '@string/amegram_account_type':
             raise ValueError('Android account type must use the per-variant AmeGram resource: ' + path)
+    for name in ['AndroidManifest.xml', 'AndroidManifest_SDK23.xml']:
+        manifest = ET.parse(ROOT / 'TMessagesProj/config/debug' / name).getroot()
+        application = manifest.find('application')
+        services = [element for element in application.findall('service')
+                    if element.get(android + 'name') == 'org.telegram.messenger.GcmPushListenerService']
+        metadata = [element for element in application.findall('meta-data')
+                    if element.get(android + 'name') == 'com.google.android.maps.v2.API_KEY']
+        if len(services) != 1 or services[0].get(android + 'exported') != 'false':
+            raise ValueError('Debug FCM service must remain private: ' + name)
+        if len(metadata) != 1 or metadata[0].get(android + 'value') != '@string/amegram_google_maps_api_key':
+            raise ValueError('Debug Maps key must use its separate owner resource: ' + name)
     build_vars = (ROOT / 'TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java').read_text()
     for field in ['public static int APP_ID = BuildConfig.AMEGRAM_API_ID;',
                   'public static String APP_HASH = BuildConfig.AMEGRAM_API_HASH;']:
