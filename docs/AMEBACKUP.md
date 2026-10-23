@@ -10,7 +10,7 @@ AmeBackup is implemented in AmeGram Settings without Telegram API access. This f
 - Document I/O and synchronous preference commits run on a dedicated background thread rather than the UI or Telegram's shared queues. Controls are disabled during an active operation. Failures are visible and are never reported as success.
 - New dialogs explicitly disable Telegram's optional blurred background and use solid AmeGram surfaces/purple actions. Rows keep 56 dp minimum touch targets and button accessibility semantics; status text uses a polite accessibility live region. No new custom animation is introduced.
 
-The feature adds no storage permission, persistent URI grant, account access, dependency, analytics or network client. Only a system-picker-selected `content://` URI is opened. A selected operation may finish after navigating away; callbacks skip a destroyed fragment. No document URI, file contents or parser/provider exception is logged.
+The feature adds no storage permission, persistent URI grant, account access, dependency, analytics or network client. Only a system-picker-selected `content://` URI is opened. A selected operation may finish after navigating away; results wait until the settings fragment resumes, and callbacks skip a destroyed fragment. No document URI, file contents or parser/provider exception is logged.
 
 ## Format and storage boundary
 
@@ -34,7 +34,8 @@ The exported file is plain interface configuration, not encrypted private-data s
 
 ## Verification — 2026-10-23
 
-- **PASS locally:** final API-independent Gradle source/resource/unit command, 227 tasks (6 executed, 221 up-to-date), 31s after the dialog refinement. The initial broader pass executed 40 tasks in 1m38s. Library/app Java and resources, actual application IDs, merged manifests and duplicate classes passed. No installable API-less APK was packaged.
+- **PASS locally:** full API-independent Gradle source/resource/unit command, 227 tasks (6 executed, 221 up-to-date), 31s after the dialog refinement. The initial broader pass executed 40 tasks in 1m38s. Library/app Java and resources, actual application IDs, merged manifests and duplicate classes passed. No installable API-less APK was packaged.
+- **PASS locally after the lifecycle refinement:** Java compilation and JVM tests, 154 tasks (5 executed, 149 up-to-date), 29s. Paused fragments defer result presentation until resume.
 - **PASS:** 15 JVM tests total, 0 failures/errors (actual XML reports inspected). 10 codec tests cover round trips, field order, allowlists, duplicates, schema versions/types, malformed syntax/UTF-8, trailing data, size boundaries and redacted I/O failures.
 - 3 storage-boundary JVM tests use an explicit preference double to verify allowlisted export, restore/reset preserving unrelated data, synchronous writes and failure reporting. They do **not** emulate actual Android disk/process behavior.
 - The existing 2 palette contrast/OLED JVM tests passed unchanged. The 12 configuration Python tests, repository/merged-manifest contracts, actionlint 1.7.7, EN/RU resource-key checks and documentation links also passed.

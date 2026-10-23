@@ -59,6 +59,8 @@ public final class AmeGramSettingsActivity extends BaseFragment implements Notif
     private int busyMessage;
     private boolean updatingControls;
     private boolean destroyed;
+    private boolean resumed;
+    private Runnable pendingBackupResult;
 
     @Override
     public boolean onFragmentCreate() {
@@ -70,6 +72,8 @@ public final class AmeGramSettingsActivity extends BaseFragment implements Notif
     @Override
     public void onFragmentDestroy() {
         destroyed = true;
+        resumed = false;
+        pendingBackupResult = null;
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetNewTheme);
         super.onFragmentDestroy();
     }
@@ -284,19 +288,28 @@ public final class AmeGramSettingsActivity extends BaseFragment implements Notif
                 AndroidUtilities.runOnUIThread(() -> {
                     if (destroyed) return;
                     setBusy(false, 0);
-                    refreshSettings();
-                    completed.accept(result);
+                    deliverBackupResult(() -> {
+                        refreshSettings();
+                        completed.accept(result);
+                    });
                 });
             } catch (Exception error) {
                 // No URI, file contents, parser errors or configuration values in logs.
                 AndroidUtilities.runOnUIThread(() -> {
                     if (destroyed) return;
                     setBusy(false, 0);
-                    refreshSettings();
-                    showBackupMessage(failure);
+                    deliverBackupResult(() -> {
+                        refreshSettings();
+                        showBackupMessage(failure);
+                    });
                 });
             }
         }, "AmeBackup").start();
+    }
+
+    private void deliverBackupResult(Runnable result) {
+        if (resumed) result.run();
+        else pendingBackupResult = result;
     }
 
     private void setBusy(boolean value, int message) {
@@ -382,7 +395,19 @@ public final class AmeGramSettingsActivity extends BaseFragment implements Notif
     @Override
     public void onResume() {
         super.onResume();
+        resumed = true;
         refreshSettings();
+        if (pendingBackupResult != null) {
+            Runnable result = pendingBackupResult;
+            pendingBackupResult = null;
+            result.run();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        resumed = false;
+        super.onPause();
     }
 
     @Override
