@@ -11553,4 +11553,23 @@
     <string name="AmeGramAbout">About AmeGram</string>
     <string name="AmeGramSlogan">Telegram without the glass.</string>
     <string name="AmeGramAboutDetails">AmeGram %1$s · %2$s\n%3$s\n%4$s</string>
+    <string name="AmeGramBackup">AmeBackup</string>
+    <string name="AmeGramBackupInfo">Saves the OLED background preference for AmeGram Settings. Telegram themes, accounts, messages and sign-in data are excluded.</string>
+    <string name="AmeGramBackupExport">Export settings</string>
+    <string name="AmeGramBackupImport">Import settings</string>
+    <string name="AmeGramBackupReset">Reset AmeGram settings</string>
+    <string name="AmeGramBackupResetAction">Reset</string>
+    <string name="AmeGramBackupResetInfo">Restore the default OLED background preference? Telegram settings, accounts and other local data are preserved.</string>
+    <string name="AmeGramBackupChooseFile">Choose a file in the system picker…</string>
+    <string name="AmeGramBackupReading">Reading settings…</string>
+    <string name="AmeGramBackupSaving">Saving settings…</string>
+    <string name="AmeGramBackupPickerFailed">Unable to open the system file picker. Try again with a document provider available on this device.</string>
+    <string name="AmeGramBackupWriteFailed">Unable to save settings. Check available storage and file access, then try again.</string>
+    <string name="AmeGramBackupReadFailed">Unable to read a supported AmeGram settings backup. Choose a valid backup up to 16 KB.</string>
+    <string name="AmeGramBackupExported">AmeGram settings exported.</string>
+    <string name="AmeGramBackupRestored">AmeGram settings saved.</string>
+    <string name="AmeGramBackupRestore">Apply settings</string>
+    <string name="AmeGramBackupOledOn">OLED background: on</string>
+    <string name="AmeGramBackupOledOff">OLED background: off</string>
+    <string name="AmeGramBackupImportPreview">%1$s\n\nApply this preference to AmeGram Settings? Telegram settings and accounts are unchanged.</string>
 </resources>

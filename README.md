@@ -10,6 +10,7 @@ The goal is a maintainable, feature-rich client with modern functionality, class
 
 - AmeGram Settings entry in the existing Settings screen.
 - A persistent, device-local OLED background preference for **AmeGram Settings only**, effective with Telegram's dark theme.
+- AmeBackup: export, preview/import and reset allowlisted local interface settings via the Android document picker; see [scope and verification](docs/AMEBACKUP.md).
 - Links to existing Telegram appearance, folders, notification and privacy settings.
 - An informational AmeLab section; no experimental controls are available yet.
 - Central light/dark design tokens, English/Russian text, independent temporary launcher monogram and application ID `dev.umi.amegram` (`.beta` for the regular debug build).

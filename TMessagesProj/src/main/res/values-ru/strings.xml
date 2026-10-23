@@ -281,4 +281,23 @@
     <string name="AmeGramAbout">Об AmeGram</string>
     <string name="AmeGramSlogan">Telegram без стекла.</string>
     <string name="AmeGramAboutDetails">AmeGram %1$s · %2$s\n%3$s\n%4$s</string>
+    <string name="AmeGramBackup">AmeBackup</string>
+    <string name="AmeGramBackupInfo">Сохраняет параметр OLED-фона в настройках AmeGram. Темы Telegram, аккаунты, сообщения и данные входа не включаются.</string>
+    <string name="AmeGramBackupExport">Экспорт настроек</string>
+    <string name="AmeGramBackupImport">Импорт настроек</string>
+    <string name="AmeGramBackupReset">Сбросить настройки AmeGram</string>
+    <string name="AmeGramBackupResetAction">Сбросить</string>
+    <string name="AmeGramBackupResetInfo">Восстановить значение OLED-фона по умолчанию? Настройки Telegram, аккаунты и другие локальные данные сохранятся.</string>
+    <string name="AmeGramBackupChooseFile">Выберите файл в системном диалоге…</string>
+    <string name="AmeGramBackupReading">Чтение настроек…</string>
+    <string name="AmeGramBackupSaving">Сохранение настроек…</string>
+    <string name="AmeGramBackupPickerFailed">Не удалось открыть системный диалог выбора файла. Проверьте доступность файлового менеджера и повторите попытку.</string>
+    <string name="AmeGramBackupWriteFailed">Не удалось сохранить настройки. Проверьте свободное место и доступ к файлу, затем повторите попытку.</string>
+    <string name="AmeGramBackupReadFailed">Не удалось прочитать поддерживаемую копию настроек AmeGram. Выберите корректный файл размером до 16 КБ.</string>
+    <string name="AmeGramBackupExported">Настройки AmeGram экспортированы.</string>
+    <string name="AmeGramBackupRestored">Настройки AmeGram сохранены.</string>
+    <string name="AmeGramBackupRestore">Применить настройки</string>
+    <string name="AmeGramBackupOledOn">OLED-фон: включён</string>
+    <string name="AmeGramBackupOledOff">OLED-фон: выключен</string>
+    <string name="AmeGramBackupImportPreview">%1$s\n\nПрименить этот параметр в настройках AmeGram? Настройки Telegram и аккаунты не изменятся.</string>
 </resources>

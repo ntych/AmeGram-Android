@@ -3,9 +3,13 @@
  */
 package org.telegram.ui.amegram;
 
+import android.app.Activity;
+import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -13,14 +17,17 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.amegram.AmeGramConfig;
+import org.telegram.messenger.amegram.AmeGramBackup;
 import org.telegram.messenger.amegram.AmeGramSettings;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.FiltersSetupActivity;
@@ -28,10 +35,17 @@ import org.telegram.ui.NotificationsSettingsActivity;
 import org.telegram.ui.PrivacySettingsActivity;
 import org.telegram.ui.ThemeActivity;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 
 /** A small, solid-surface entry point using Telegram's existing navigation stack. */
 public final class AmeGramSettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+    private static final int EXPORT_SETTINGS = 12071;
+    private static final int IMPORT_SETTINGS = 12072;
     private final ArrayList<TextView> bodyViews = new ArrayList<>();
     private final ArrayList<TextView> headingViews = new ArrayList<>();
     private final ArrayList<View> surfaceViews = new ArrayList<>();
@@ -39,15 +53,27 @@ public final class AmeGramSettingsActivity extends BaseFragment implements Notif
     private FrameLayout root;
     private LinearLayout content;
     private Switch oledSwitch;
+    private final ArrayList<TextView> backupActions = new ArrayList<>();
+    private TextView backupStatus;
+    private boolean busy;
+    private int busyMessage;
+    private boolean updatingControls;
+    private boolean destroyed;
+    private boolean resumed;
+    private Runnable pendingBackupResult;
 
     @Override
     public boolean onFragmentCreate() {
+        destroyed = false;
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewTheme);
         return super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
+        destroyed = true;
+        resumed = false;
+        pendingBackupResult = null;
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetNewTheme);
         super.onFragmentDestroy();
     }
@@ -80,6 +106,7 @@ public final class AmeGramSettingsActivity extends BaseFragment implements Notif
         bodyViews.clear();
         headingViews.clear();
         surfaceViews.clear();
+        backupActions.clear();
 
         addText(context, R.string.AmeGramUnofficial, false);
         addText(context, R.string.AmeGramAppearance, true);
@@ -95,6 +122,7 @@ public final class AmeGramSettingsActivity extends BaseFragment implements Notif
         bodyViews.add(oledSwitch);
         surfaceViews.add(oledSwitch);
         oledSwitch.setOnCheckedChangeListener((button, checked) -> {
+            if (updatingControls) return;
             settings.setOledDarkBackground(checked);
             applyPalette();
         });
@@ -108,6 +136,14 @@ public final class AmeGramSettingsActivity extends BaseFragment implements Notif
         addLink(context, R.string.AmeGramTelegramPrivacy, PrivacySettingsActivity::new);
         addText(context, R.string.AmeGramLab, true);
         addText(context, R.string.AmeGramLabUnavailable, false);
+        addText(context, R.string.AmeGramBackup, true);
+        addText(context, R.string.AmeGramBackupInfo, false);
+        backupActions.add(addAction(context, R.string.AmeGramBackupExport, () -> openBackupPicker(true)));
+        backupActions.add(addAction(context, R.string.AmeGramBackupImport, () -> openBackupPicker(false)));
+        backupActions.add(addAction(context, R.string.AmeGramBackupReset, this::confirmReset));
+        backupStatus = addText(context, R.string.AmeGramBackupReading, false);
+        backupStatus.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        setBusy(busy, busyMessage);
         addText(context, R.string.AmeGramAbout, true);
         TextView version = addText(context, R.string.AmeGramUnofficial, false);
         version.setText(LocaleController.formatString(R.string.AmeGramAboutDetails,
@@ -135,6 +171,14 @@ public final class AmeGramSettingsActivity extends BaseFragment implements Notif
     }
 
     private void addLink(Context context, int title, java.util.function.Supplier<BaseFragment> factory) {
+        addAction(context, title, () -> {
+            BaseFragment target = factory.get();
+            target.setCurrentAccount(currentAccount);
+            presentFragment(target);
+        });
+    }
+
+    private TextView addAction(Context context, int title, Runnable action) {
         TextView view = addText(context, title, false);
         view.setTextSize(16);
         view.setMinHeight(AndroidUtilities.dp(56));
@@ -147,12 +191,175 @@ public final class AmeGramSettingsActivity extends BaseFragment implements Notif
                 info.setClassName("android.widget.Button");
             }
         });
-        view.setOnClickListener(v -> {
-            BaseFragment target = factory.get();
-            target.setCurrentAccount(currentAccount);
-            presentFragment(target);
-        });
+        view.setOnClickListener(v -> action.run());
         surfaceViews.add(view);
+        return view;
+    }
+
+    private void openBackupPicker(boolean export) {
+        if (busy || getParentActivity() == null) return;
+        Intent intent = new Intent(export ? Intent.ACTION_CREATE_DOCUMENT : Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType(export ? "application/json" : "*/*");
+        if (export) intent.putExtra(Intent.EXTRA_TITLE, "AmeGram-settings.json");
+        setBusy(true, R.string.AmeGramBackupChooseFile);
+        try {
+            startActivityForResult(intent, export ? EXPORT_SETTINGS : IMPORT_SETTINGS);
+        } catch (RuntimeException error) {
+            setBusy(false, 0);
+            showBackupMessage(R.string.AmeGramBackupPickerFailed);
+        }
+    }
+
+    @Override
+    public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
+        super.onActivityResultFragment(requestCode, resultCode, data);
+        if (destroyed || (requestCode != EXPORT_SETTINGS && requestCode != IMPORT_SETTINGS)) return;
+        if (resultCode != Activity.RESULT_OK) {
+            setBusy(false, 0);
+            return;
+        }
+        Uri uri = data == null ? null : data.getData();
+        if (uri == null || !"content".equals(uri.getScheme()) || getParentActivity() == null) {
+            setBusy(false, 0);
+            showBackupMessage(R.string.AmeGramBackupPickerFailed);
+            return;
+        }
+        ContentResolver resolver = getParentActivity().getApplicationContext().getContentResolver();
+        if (requestCode == EXPORT_SETTINGS) {
+            AmeGramBackup.Snapshot snapshot = settings.snapshot();
+            runBackup(R.string.AmeGramBackupSaving, R.string.AmeGramBackupWriteFailed, () -> {
+                byte[] bytes = AmeGramBackup.encode(snapshot);
+                try (OutputStream output = resolver.openOutputStream(uri, "wt")) {
+                    if (output == null) throw new IOException();
+                    output.write(bytes);
+                    output.flush();
+                }
+                return snapshot;
+            }, result -> backupToast(R.string.AmeGramBackupExported));
+        } else {
+            runBackup(R.string.AmeGramBackupReading, R.string.AmeGramBackupReadFailed, () -> {
+                try (InputStream input = resolver.openInputStream(uri)) {
+                    if (input == null) throw new IOException();
+                    return AmeGramBackup.decode(input);
+                }
+            }, this::confirmImport);
+        }
+    }
+
+    private void confirmImport(AmeGramBackup.Snapshot snapshot) {
+        if (destroyed || getParentActivity() == null) return;
+        String preview = LocaleController.formatString(R.string.AmeGramBackupImportPreview,
+                LocaleController.getString(snapshot.oledDarkBackground
+                        ? R.string.AmeGramBackupOledOn : R.string.AmeGramBackupOledOff));
+        showBackupDialog(new AlertDialog.Builder(getParentActivity())
+                .setTitle(LocaleController.getString(R.string.AmeGramBackupImport))
+                .setMessage(preview)
+                .setPositiveButton(LocaleController.getString(R.string.AmeGramBackupRestore), (dialog, which) -> restoreBackup(snapshot))
+                .setNegativeButton(LocaleController.getString(R.string.Cancel), null));
+    }
+
+    private void confirmReset() {
+        if (busy || getParentActivity() == null) return;
+        showBackupDialog(new AlertDialog.Builder(getParentActivity())
+                .setTitle(LocaleController.getString(R.string.AmeGramBackupReset))
+                .setMessage(LocaleController.getString(R.string.AmeGramBackupResetInfo))
+                .setPositiveButton(LocaleController.getString(R.string.AmeGramBackupResetAction),
+                        (dialog, which) -> restoreBackup(new AmeGramBackup.Snapshot(false)))
+                .setNegativeButton(LocaleController.getString(R.string.Cancel), null));
+    }
+
+    private void restoreBackup(AmeGramBackup.Snapshot snapshot) {
+        if (busy || destroyed) return;
+        AmeGramSettings store = settings;
+        runBackup(R.string.AmeGramBackupSaving, R.string.AmeGramBackupWriteFailed, () -> {
+            if (!store.restore(snapshot)) throw new IOException();
+            return snapshot;
+        }, result -> backupToast(R.string.AmeGramBackupRestored));
+    }
+
+    private <T> void runBackup(int progress, int failure, Callable<T> work, Consumer<T> completed) {
+        setBusy(true, progress);
+        // A document provider may be slow; never block UI or Telegram's shared queues.
+        new Thread(() -> {
+            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
+            try {
+                T result = work.call();
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (destroyed) return;
+                    setBusy(false, 0);
+                    deliverBackupResult(() -> {
+                        refreshSettings();
+                        completed.accept(result);
+                    });
+                });
+            } catch (Exception error) {
+                // No URI, file contents, parser errors or configuration values in logs.
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (destroyed) return;
+                    setBusy(false, 0);
+                    deliverBackupResult(() -> {
+                        refreshSettings();
+                        showBackupMessage(failure);
+                    });
+                });
+            }
+        }, "AmeBackup").start();
+    }
+
+    private void deliverBackupResult(Runnable result) {
+        if (resumed) result.run();
+        else pendingBackupResult = result;
+    }
+
+    private void setBusy(boolean value, int message) {
+        busy = value;
+        busyMessage = message;
+        if (oledSwitch != null) oledSwitch.setEnabled(!busy);
+        for (TextView action : backupActions) {
+            action.setEnabled(!busy);
+            action.setAlpha(busy ? 0.5f : 1f);
+        }
+        if (backupStatus != null) {
+            if (busy) backupStatus.setText(LocaleController.getString(message));
+            backupStatus.setVisibility(busy ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    private void showBackupMessage(int message) {
+        if (destroyed || getParentActivity() == null) return;
+        showBackupDialog(new AlertDialog.Builder(getParentActivity())
+                .setTitle(LocaleController.getString(R.string.AmeGramBackup))
+                .setMessage(LocaleController.getString(message))
+                .setPositiveButton(LocaleController.getString(R.string.OK), null));
+    }
+
+    private void showBackupDialog(AlertDialog.Builder builder) {
+        AlertDialog dialog = builder.create();
+        boolean dark = Theme.isCurrentThemeDark();
+        dialog.setBlurParams(1f, false, false);
+        dialog.setBackgroundColor(AmeGramPalette.surface(dark, settings.usesOledDarkBackground()));
+        if (showDialog(dialog) != null) {
+            dialog.setTextColor(AmeGramPalette.text(dark));
+            for (int type : new int[]{AlertDialog.BUTTON_POSITIVE, AlertDialog.BUTTON_NEGATIVE}) {
+                View button = dialog.getButton(type);
+                if (button instanceof TextView) {
+                    ((TextView) button).setTextColor(AmeGramPalette.accessibleAccent(dark));
+                }
+            }
+        }
+    }
+
+    private void backupToast(int message) {
+        if (getParentActivity() != null) Toast.makeText(getParentActivity(), LocaleController.getString(message), Toast.LENGTH_SHORT).show();
+    }
+
+    private void refreshSettings() {
+        if (oledSwitch == null) return;
+        updatingControls = true;
+        oledSwitch.setChecked(settings.usesOledDarkBackground());
+        updatingControls = false;
+        applyPalette();
     }
 
     private void applyPalette() {
@@ -188,10 +395,19 @@ public final class AmeGramSettingsActivity extends BaseFragment implements Notif
     @Override
     public void onResume() {
         super.onResume();
-        if (oledSwitch != null) {
-            oledSwitch.setChecked(settings.usesOledDarkBackground());
-            applyPalette();
+        resumed = true;
+        refreshSettings();
+        if (pendingBackupResult != null) {
+            Runnable result = pendingBackupResult;
+            pendingBackupResult = null;
+            result.run();
         }
+    }
+
+    @Override
+    public void onPause() {
+        resumed = false;
+        super.onPause();
     }
 
     @Override
