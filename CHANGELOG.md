@@ -2,6 +2,10 @@
 
 ## 0.1.0-alpha — Unreleased
 
+- Add AmeBackup document export, strict previewed import and confirmed reset for the scoped OLED interface preference; exclude accounts, messages and credentials.
+- Keep backup I/O off the UI/shared Telegram queues, report write failures and use solid, localized accessible controls/dialogs.
+- Add bounded codec/storage JVM regression tests and a future Android preference-backup round-trip test; document API-independent verification.
+
 - Add redacted owner-configured debug preflight/build commands with Telegram/Firebase output, merged manifest and duplicate-class checks.
 - Make debug FCM services private and replace inherited debug Maps keys with a separate optional owner environment binding.
 - Document platform-specific cloud secret handoff, Firebase compatibility checks and remaining device/service gates.
