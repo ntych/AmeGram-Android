@@ -46,4 +46,21 @@ public class AmeGramSettingsTest {
         new AmeGramSettings(context).setOledDarkBackground(true);
         assertEquals(before, upstream.getAll());
     }
+
+    @Test
+    public void backupRoundTripCommitsOnlyKnownAmeGramSettings() throws Exception {
+        android.content.SharedPreferences local = context.getSharedPreferences("amegram_settings", Context.MODE_PRIVATE);
+        assertTrue(local.edit().putString("unrelated", "keep").commit());
+        android.content.SharedPreferences upstream = context.getSharedPreferences("mainconfig", Context.MODE_PRIVATE);
+        java.util.Map<String, ?> before = upstream.getAll();
+        AmeGramSettings settings = new AmeGramSettings(context);
+        settings.setOledDarkBackground(true);
+        byte[] bytes = AmeGramBackup.encode(settings.snapshot());
+        assertTrue(settings.restore(new AmeGramBackup.Snapshot(false)));
+        assertTrue(settings.restore(AmeGramBackup.decode(new java.io.ByteArrayInputStream(bytes))));
+        assertTrue(new AmeGramSettings(context).usesOledDarkBackground());
+        assertTrue(local.getBoolean("oled_dark_background", false));
+        assertEquals("keep", local.getString("unrelated", null));
+        assertEquals(before, upstream.getAll());
+    }
 }

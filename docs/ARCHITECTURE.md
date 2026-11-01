@@ -73,3 +73,7 @@ See [VERIFICATION.md](VERIFICATION.md) for actual commands/results. Compiling Ja
 The 2026-10-17 [build audit](BUILD_AUDIT.md) adds a credential-free PR profile, removes Firebase generation from the shared library, removes tracked service JSON fixtures and verifies final regular variant IDs. Normal application identity, production signing and visual tokens are unchanged. See that audit for current verification results rather than treating the initial blockers above as current.
 
 The owner-configured debug helper and manifest/provider checks are documented in [API_FIREBASE_READINESS.md](API_FIREBASE_READINESS.md). Telegram BuildConfig, Firebase app resources and the optional Maps resource are independent registrations.
+
+## AmeBackup boundary
+
+`AmeGramBackup` is a strict, bounded, versioned codec for allowlisted device-wide interface settings. `AmeGramSettings` provides snapshots and synchronous scoped restore; the settings fragment owns Android document-picker navigation, preview/confirmation, background I/O and lifecycle-safe UI callbacks. It does not depend on Telegram API or Firebase configuration. The existing Gson dependency is reused. See [AMEBACKUP.md](AMEBACKUP.md) for schema/storage guarantees and verification limits.

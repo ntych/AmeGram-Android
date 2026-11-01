@@ -11,17 +11,18 @@
 | Notifications | Link to real upstream notification settings |
 | Privacy | Link to real upstream privacy/security settings |
 | AmeLab | Informational, noninteractive placeholder; no experiments available |
+| AmeBackup (catalog #87) | Implemented for the single OLED interface preference: document export, validated import/preview/confirmation and scoped reset. No account/session/message backup; Android UI/device validation pending |
 | About | Version, developer, slogan and unofficial-client notice |
 | Identity | Independent package, alpha version, localized app labels and temporary A monogram; APK/service verification remains blocked |
 | Liquid Glass | Runtime/settings gate disabled and control omitted; wider upstream blur/navigation cleanup is pending |
 | Local storage | `amegram_settings` SharedPreferences; one boolean, no account or message data |
-| Tests | Palette unit tests and preference instrumentation tests added; actual execution recorded separately |
+| Tests | Palette, backup codec and storage-boundary JVM tests; preference/backup instrumentation tests added. Execution and Android limitations are recorded in AMEBACKUP.md |
 
 “Implemented” describes source changes, not a verified installable application. See VERIFICATION.md.
 
 ## Long-term product backlog
 
-All items below are **planned**, except the narrow pieces explicitly described above. Numbers match the initial product catalog.
+All items below are **planned**, except the narrow pieces explicitly described above, including the initial #87 interface-settings backup. Numbers match the initial product catalog.
 
 | Range | Area | Planned capabilities |
 | --- | --- | --- |

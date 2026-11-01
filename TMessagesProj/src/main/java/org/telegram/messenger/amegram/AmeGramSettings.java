@@ -13,7 +13,11 @@ public final class AmeGramSettings {
     private final SharedPreferences preferences;
 
     public AmeGramSettings(Context context) {
-        preferences = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE);
+        this(context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE));
+    }
+
+    AmeGramSettings(SharedPreferences preferences) {
+        this.preferences = preferences;
     }
 
     public boolean usesOledDarkBackground() {
@@ -22,5 +26,14 @@ public final class AmeGramSettings {
 
     public void setOledDarkBackground(boolean enabled) {
         preferences.edit().putBoolean(OLED_DARK_BACKGROUND, enabled).apply();
+    }
+
+    public AmeGramBackup.Snapshot snapshot() {
+        return new AmeGramBackup.Snapshot(usesOledDarkBackground());
+    }
+
+    /** Call on a worker thread. Preserve unknown keys and report disk-write failures. */
+    public boolean restore(AmeGramBackup.Snapshot snapshot) {
+        return preferences.edit().putBoolean(OLED_DARK_BACKGROUND, snapshot.oledDarkBackground).commit();
     }
 }

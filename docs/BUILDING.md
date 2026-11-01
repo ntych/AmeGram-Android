@@ -40,7 +40,7 @@ The full lint command remains available separately:
 ./gradlew :TMessagesProj:lintDebug -Pandroid.injected.build.abi=arm64-v8a --max-workers=1 '-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g'
 ```
 
-The existing lint backlog is documented in [BUILD_AUDIT.md](BUILD_AUDIT.md); it has not been blanket-suppressed to make CI green. That lint command can trigger native prerequisites. Palette unit tests cover contrast/OLED behavior; preference instrumentation tests require a configured APK and device.
+The existing lint backlog is documented in [BUILD_AUDIT.md](BUILD_AUDIT.md); it has not been blanket-suppressed to make CI green. That lint command can trigger native prerequisites. JVM tests cover palette contrast/OLED behavior, bounded backup parsing and scoped preference writes using a storage double. Real preference/backup instrumentation tests require a configured APK and device; see [AMEBACKUP.md](AMEBACKUP.md).
 
 ## Owner configuration required before a debug APK
 
