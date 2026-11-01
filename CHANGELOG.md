@@ -1,0 +1,28 @@
+# Changelog
+
+## 0.1.0-alpha — Unreleased
+
+- Add AmeBackup document export, strict previewed import and confirmed reset for the scoped OLED interface preference; exclude accounts, messages and credentials.
+- Keep backup I/O off the UI/shared Telegram queues, report write failures and use solid, localized accessible controls/dialogs.
+- Add bounded codec/storage JVM regression tests and a future Android preference-backup round-trip test; document API-independent verification.
+
+- Add redacted owner-configured debug preflight/build commands with Telegram/Firebase output, merged manifest and duplicate-class checks.
+- Make debug FCM services private and replace inherited debug Maps keys with a separate optional owner environment binding.
+- Document platform-specific cloud secret handoff, Firebase compatibility checks and remaining device/service gates.
+
+- Add pinned, credential-free pull-request source/resource/unit checks and AGP application-ID verification.
+- Remove tracked service JSON fixtures from new trees, protect local configuration/signing paths and keep Firebase generation in the app module.
+- Pin the Gradle distribution checksum and document current build/component/emulator compatibility.
+- Correct the native queued-request callback return type and localize About metadata without changing the interface.
+- Audit Telegram Android 13.0.2 (7175), preserve its history and document upstream synchronization.
+- Introduce AmeGram package/version preparation, independent temporary launcher branding and per-variant Android account types.
+- Read Telegram API configuration from environment variables; block APK packaging without it and block distribution pending integration review.
+- Use standard developer debug signing, disable upstream update downloads/official-only passkeys, clear inherited SMS/service identifiers and default logs off.
+- Remove identified authentication/push/integrity/CAPTCHA/billing token and push-key/payload log leaks; advertise SMS hash retrieval only when configured.
+- Add AmeGram Settings with appearance, organization, notifications, privacy, informational AmeLab and About sections.
+- Persist an OLED dark-background preference scoped to AmeGram Settings; introduce purple/light/dark solid-surface tokens and English/Russian strings.
+- Disable the gated Liquid Glass effect, omit its control and hide the unfinished alternate-icon selector.
+- Preserve upstream legal notices and retain font license assets during packaging.
+- Add palette contrast unit tests and local preference instrumentation tests; document actual verification separately.
+
+No APK, release, live login or messaging validation is claimed by this entry.
